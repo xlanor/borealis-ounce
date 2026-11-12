@@ -291,6 +291,21 @@ if (PLATFORM_SWITCH AND BOREALIS_USE_DEKO3D)
 elseif (PLATFORM_SWITCH AND BOREALIS_USE_VULKAN)
     file(GLOB_RECURSE NANOVG_PLATFORM_SRC ${BOREALIS_PATH}/lib/extern/nanovg/vulkan/*.cpp)
     list(APPEND BOREALIS_SRC ${NANOVG_PLATFORM_SRC})
+    find_program(GLSLANG_VALIDATOR glslangValidator REQUIRED NO_CMAKE_FIND_ROOT_PATH)
+    set(NANOVG_VK_SHADER_DIR ${CMAKE_CURRENT_BINARY_DIR}/nanovg_vk_shaders)
+    file(MAKE_DIRECTORY ${NANOVG_VK_SHADER_DIR})
+    foreach (shader fill.vert fill.frag)
+        string(REPLACE "." "_" shader_name ${shader})
+        set(shader_source ${BOREALIS_PATH}/lib/extern/nanovg/vulkan/shaders/${shader})
+        set(shader_header ${NANOVG_VK_SHADER_DIR}/nanovg_vk_${shader_name}.h)
+        add_custom_command(
+                OUTPUT ${shader_header}
+                COMMAND ${GLSLANG_VALIDATOR} -V --target-env vulkan1.3 --vn nanovg_vk_${shader_name} -o ${shader_header} ${shader_source}
+                DEPENDS ${shader_source}
+                VERBATIM)
+        list(APPEND BOREALIS_SRC ${shader_header})
+    endforeach ()
+    list(APPEND BOREALIS_INCLUDE ${NANOVG_VK_SHADER_DIR})
 endif ()
 message(STATUS "BOREALIS_SOURCE: ${BOREALIS_SOURCE}")
 
