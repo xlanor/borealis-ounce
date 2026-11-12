@@ -37,6 +37,8 @@ set(IOS_GUI_IDENTIFIER "" CACHE STRING "Package name.")
 
 # Nintendo Switch Only
 cmake_dependent_option(USE_DEKO3D "Using deko3d instead of OpenGL." OFF "PLATFORM_SWITCH" OFF)
+cmake_dependent_option(PLATFORM_SWITCH2 "Build for Switch 2 with libounce." OFF "PLATFORM_SWITCH" OFF)
+cmake_dependent_option(USE_VULKAN "Using Vulkan instead of OpenGL." OFF "PLATFORM_SWITCH" OFF)
 
 option(USE_BOOST_FILESYSTEM "Whether to use the boost::filesystem instead of std::filesystem" OFF)
 

@@ -16,6 +16,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+#ifdef BOREALIS_USE_DEKO3D
+
 #include <borealis/core/application.hpp>
 #include <borealis/platforms/switch/switch_video.hpp>
 
@@ -333,3 +335,5 @@ void SwitchVideoContext::queueFlush()
 }
 
 } // namespace brls
+
+#endif

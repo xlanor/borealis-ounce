@@ -32,7 +32,7 @@
 #include <borealis/platforms/ps4/ps4_platform.hpp>
 #endif
 
-#if defined(BOREALIS_USE_DEKO3D)
+#if defined(BOREALIS_USE_DEKO3D) || defined(BOREALIS_USE_VULKAN)
 #elif defined(__GLFW__)
 #include <borealis/platforms/glfw/glfw_platform.hpp>
 #elif defined(__SDL2__)
