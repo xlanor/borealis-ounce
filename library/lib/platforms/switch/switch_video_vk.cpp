@@ -7,6 +7,7 @@
 #include <borealis/core/application.hpp>
 #include <borealis/core/logger.hpp>
 #include <borealis/core/util.hpp>
+#include <borealis/core/vk_handle.hpp>
 #include <borealis/platforms/switch/switch_video_vk.hpp>
 #include <iterator>
 #include <limits>
@@ -21,92 +22,16 @@ namespace brls
 
 struct SwitchVideoContext::State
 {
-    template <typename Handle, auto Destroy>
-    class Root
-    {
-      public:
-        Root() = default;
-        explicit Root(Handle handle)
-            : handle(handle)
-        {
-        }
-        ~Root() { reset(); }
-        Root(Root&& other) noexcept
-            : handle(std::exchange(other.handle, VK_NULL_HANDLE))
-        {
-        }
-        Root& operator=(Root&& other) noexcept
-        {
-            if (this != &other)
-            {
-                reset();
-                handle = std::exchange(other.handle, VK_NULL_HANDLE);
-            }
-            return *this;
-        }
-
-        Handle get() const { return handle; }
-
-        void reset()
-        {
-            if (handle != VK_NULL_HANDLE)
-                Destroy(std::exchange(handle, VK_NULL_HANDLE), nullptr);
-        }
-
-      private:
-        Handle handle = VK_NULL_HANDLE;
-    };
-
-    template <typename Parent, typename Handle, auto Destroy>
-    class Child
-    {
-      public:
-        Child() = default;
-        Child(Parent parent, Handle handle)
-            : parent(parent)
-            , handle(handle)
-        {
-        }
-        ~Child() { reset(); }
-        Child(Child&& other) noexcept
-            : parent(other.parent)
-            , handle(std::exchange(other.handle, VK_NULL_HANDLE))
-        {
-        }
-        Child& operator=(Child&& other) noexcept
-        {
-            if (this != &other)
-            {
-                reset();
-                parent = other.parent;
-                handle = std::exchange(other.handle, VK_NULL_HANDLE);
-            }
-            return *this;
-        }
-
-        Handle get() const { return handle; }
-
-        void reset()
-        {
-            if (handle != VK_NULL_HANDLE)
-                Destroy(parent, std::exchange(handle, VK_NULL_HANDLE), nullptr);
-        }
-
-      private:
-        Parent parent = VK_NULL_HANDLE;
-        Handle handle = VK_NULL_HANDLE;
-    };
-
-    using Instance    = Root<VkInstance, vkDestroyInstance>;
-    using Device      = Root<VkDevice, vkDestroyDevice>;
-    using Surface     = Child<VkInstance, VkSurfaceKHR, vkDestroySurfaceKHR>;
-    using Swapchain   = Child<VkDevice, VkSwapchainKHR, vkDestroySwapchainKHR>;
-    using Image       = Child<VkDevice, VkImage, vkDestroyImage>;
-    using ImageView   = Child<VkDevice, VkImageView, vkDestroyImageView>;
-    using Memory      = Child<VkDevice, VkDeviceMemory, vkFreeMemory>;
-    using Semaphore   = Child<VkDevice, VkSemaphore, vkDestroySemaphore>;
-    using Fence       = Child<VkDevice, VkFence, vkDestroyFence>;
-    using CommandPool = Child<VkDevice, VkCommandPool, vkDestroyCommandPool>;
+    using Instance    = vk::RootHandle<VkInstance, vkDestroyInstance>;
+    using Device      = vk::RootHandle<VkDevice, vkDestroyDevice>;
+    using Surface     = vk::ChildHandle<VkInstance, VkSurfaceKHR, vkDestroySurfaceKHR>;
+    using Swapchain   = vk::ChildHandle<VkDevice, VkSwapchainKHR, vkDestroySwapchainKHR>;
+    using Image       = vk::ChildHandle<VkDevice, VkImage, vkDestroyImage>;
+    using ImageView   = vk::ChildHandle<VkDevice, VkImageView, vkDestroyImageView>;
+    using Memory      = vk::ChildHandle<VkDevice, VkDeviceMemory, vkFreeMemory>;
+    using Semaphore   = vk::ChildHandle<VkDevice, VkSemaphore, vkDestroySemaphore>;
+    using Fence       = vk::ChildHandle<VkDevice, VkFence, vkDestroyFence>;
+    using CommandPool = vk::ChildHandle<VkDevice, VkCommandPool, vkDestroyCommandPool>;
 
     class DisplayResolutionEvent
     {

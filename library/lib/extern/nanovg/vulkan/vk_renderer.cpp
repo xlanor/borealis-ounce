@@ -2,6 +2,7 @@
 #include <array>
 #include <bit>
 #include <borealis/core/logger.hpp>
+#include <borealis/core/vk_handle.hpp>
 #include <cmath>
 #include <cstddef>
 #include <cstring>
@@ -22,56 +23,16 @@ namespace nvg
 
 struct VkRenderer::State
 {
-    template <typename Handle, auto Destroy>
-    class Owned
-    {
-      public:
-        Owned() = default;
-        Owned(VkDevice device, Handle handle)
-            : device(device)
-            , handle(handle)
-        {
-        }
-        ~Owned() { reset(); }
-        Owned(Owned&& other) noexcept
-            : device(other.device)
-            , handle(std::exchange(other.handle, VK_NULL_HANDLE))
-        {
-        }
-        Owned& operator=(Owned&& other) noexcept
-        {
-            if (this != &other)
-            {
-                reset();
-                device = other.device;
-                handle = std::exchange(other.handle, VK_NULL_HANDLE);
-            }
-            return *this;
-        }
-
-        Handle get() const { return handle; }
-
-        void reset()
-        {
-            if (handle != VK_NULL_HANDLE)
-                Destroy(device, std::exchange(handle, VK_NULL_HANDLE), nullptr);
-        }
-
-      private:
-        VkDevice device = VK_NULL_HANDLE;
-        Handle handle   = VK_NULL_HANDLE;
-    };
-
-    using Buffer              = Owned<VkBuffer, vkDestroyBuffer>;
-    using Memory              = Owned<VkDeviceMemory, vkFreeMemory>;
-    using Image               = Owned<VkImage, vkDestroyImage>;
-    using ImageView           = Owned<VkImageView, vkDestroyImageView>;
-    using Sampler             = Owned<VkSampler, vkDestroySampler>;
-    using DescriptorSetLayout = Owned<VkDescriptorSetLayout, vkDestroyDescriptorSetLayout>;
-    using DescriptorPool      = Owned<VkDescriptorPool, vkDestroyDescriptorPool>;
-    using PipelineLayout      = Owned<VkPipelineLayout, vkDestroyPipelineLayout>;
-    using Pipeline            = Owned<VkPipeline, vkDestroyPipeline>;
-    using ShaderModule        = Owned<VkShaderModule, vkDestroyShaderModule>;
+    using Buffer              = brls::vk::DeviceHandle<VkBuffer, vkDestroyBuffer>;
+    using Memory              = brls::vk::DeviceHandle<VkDeviceMemory, vkFreeMemory>;
+    using Image               = brls::vk::DeviceHandle<VkImage, vkDestroyImage>;
+    using ImageView           = brls::vk::DeviceHandle<VkImageView, vkDestroyImageView>;
+    using Sampler             = brls::vk::DeviceHandle<VkSampler, vkDestroySampler>;
+    using DescriptorSetLayout = brls::vk::DeviceHandle<VkDescriptorSetLayout, vkDestroyDescriptorSetLayout>;
+    using DescriptorPool      = brls::vk::DeviceHandle<VkDescriptorPool, vkDestroyDescriptorPool>;
+    using PipelineLayout      = brls::vk::DeviceHandle<VkPipelineLayout, vkDestroyPipelineLayout>;
+    using Pipeline            = brls::vk::DeviceHandle<VkPipeline, vkDestroyPipeline>;
+    using ShaderModule        = brls::vk::DeviceHandle<VkShaderModule, vkDestroyShaderModule>;
 
     class DescriptorSet
     {
