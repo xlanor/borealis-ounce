@@ -473,7 +473,7 @@ static void dknvg__renderDelete(void* uptr) {
     free(dk);
 }
 
-NVGcontext* nvgCreateDk(nvg::DkRenderer *renderer, int flags) {
+inline NVGcontext* nvgCreateDk(nvg::DkRenderer *renderer, int flags) {
     NVGparams params;
     NVGcontext* ctx = NULL;
     DKNVGcontext* dk = (DKNVGcontext*)malloc(sizeof(DKNVGcontext));
@@ -510,7 +510,7 @@ error:
     return NULL;
 }
 
-void nvgDeleteDk(NVGcontext* ctx)
+inline void nvgDeleteDk(NVGcontext* ctx)
 {
     nvgDeleteInternal(ctx);
 }
