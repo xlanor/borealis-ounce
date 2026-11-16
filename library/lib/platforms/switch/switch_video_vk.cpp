@@ -20,7 +20,7 @@
 namespace brls
 {
 
-struct SwitchVideoContext::State
+struct SwitchVulkanVideoContext::State
 {
     using Instance    = vk::RootHandle<VkInstance, vkDestroyInstance>;
     using Device      = vk::RootHandle<VkDevice, vkDestroyDevice>;
@@ -881,7 +881,7 @@ struct SwitchVideoContext::State
     }
 };
 
-SwitchVideoContext::SwitchVideoContext()
+SwitchVulkanVideoContext::SwitchVulkanVideoContext()
     : state(std::make_unique<State>())
 {
     Application::onWindowResized(static_cast<int>(state->extent.width), static_cast<int>(state->extent.height));
@@ -889,150 +889,150 @@ SwitchVideoContext::SwitchVideoContext()
     setSwapInterval(VideoContext::swapInterval);
 }
 
-SwitchVideoContext::~SwitchVideoContext() = default;
+SwitchVulkanVideoContext::~SwitchVulkanVideoContext() = default;
 
-void SwitchVideoContext::clear(NVGcolor color)
+void SwitchVulkanVideoContext::clear(NVGcolor color)
 {
     state->clear(color);
 }
 
-void SwitchVideoContext::resetState()
+void SwitchVulkanVideoContext::resetState()
 {
 }
 
-void SwitchVideoContext::beginFrame()
+void SwitchVulkanVideoContext::beginFrame()
 {
     state->beginFrame();
 }
 
-void SwitchVideoContext::endFrame()
+void SwitchVulkanVideoContext::endFrame()
 {
     state->endFrame();
 }
 
-void SwitchVideoContext::setSwapInterval(int interval)
+void SwitchVulkanVideoContext::setSwapInterval(int interval)
 {
     VideoContext::swapInterval = interval;
     state->requestedMode       = state->choosePresentMode(interval);
 }
 
-double SwitchVideoContext::getScaleFactor()
+double SwitchVulkanVideoContext::getScaleFactor()
 {
     return 1.0;
 }
 
-NVGcontext* SwitchVideoContext::getNVGContext()
+NVGcontext* SwitchVulkanVideoContext::getNVGContext()
 {
     return state->nvgContext;
 }
 
-void SwitchVideoContext::appletCallback(AppletHookType hookType)
+void SwitchVulkanVideoContext::appletCallback(AppletHookType hookType)
 {
     if (hookType == AppletHookType_OnOperationMode && !state->resolutionEvent.isReady())
         state->resetRequested = true;
 }
 
-VkInstance SwitchVideoContext::instance() const
+VkInstance SwitchVulkanVideoContext::instance() const
 {
     return state->instance.get();
 }
 
-VkPhysicalDevice SwitchVideoContext::physicalDevice() const
+VkPhysicalDevice SwitchVulkanVideoContext::physicalDevice() const
 {
     return state->physicalDevice;
 }
 
-VkDevice SwitchVideoContext::device() const
+VkDevice SwitchVulkanVideoContext::device() const
 {
     return state->device.get();
 }
 
-VkQueue SwitchVideoContext::queue() const
+VkQueue SwitchVulkanVideoContext::queue() const
 {
     return state->queue;
 }
 
-uint32_t SwitchVideoContext::queueFamilyIndex() const
+uint32_t SwitchVulkanVideoContext::queueFamilyIndex() const
 {
     return state->queueFamilyIndex;
 }
 
-std::mutex& SwitchVideoContext::queueMutex()
+std::mutex& SwitchVulkanVideoContext::queueMutex()
 {
     return state->queueMutex;
 }
 
-const VkPhysicalDeviceMemoryProperties& SwitchVideoContext::memoryProperties() const
+const VkPhysicalDeviceMemoryProperties& SwitchVulkanVideoContext::memoryProperties() const
 {
     return state->memoryProperties;
 }
 
-std::optional<uint32_t> SwitchVideoContext::findMemoryType(uint32_t typeBits, VkMemoryPropertyFlags required) const
+std::optional<uint32_t> SwitchVulkanVideoContext::findMemoryType(uint32_t typeBits, VkMemoryPropertyFlags required) const
 {
     return state->findMemoryType(typeBits, required);
 }
 
-bool SwitchVideoContext::hasDeviceExtension(std::string_view name) const
+bool SwitchVulkanVideoContext::hasDeviceExtension(std::string_view name) const
 {
     return std::ranges::find(state->enabledExtensions, name) != state->enabledExtensions.end();
 }
 
-VkCommandBuffer SwitchVideoContext::uploadCommandBuffer() const
+VkCommandBuffer SwitchVulkanVideoContext::uploadCommandBuffer() const
 {
     return state->frames[state->slot].upload;
 }
 
-VkCommandBuffer SwitchVideoContext::frameCommandBuffer() const
+VkCommandBuffer SwitchVulkanVideoContext::frameCommandBuffer() const
 {
     return state->frames[state->slot].draw;
 }
 
-uint32_t SwitchVideoContext::frameSlot() const
+uint32_t SwitchVulkanVideoContext::frameSlot() const
 {
     return state->slot;
 }
 
-VkImage SwitchVideoContext::frameImage() const
+VkImage SwitchVulkanVideoContext::frameImage() const
 {
     return state->imageIndex ? state->images[*state->imageIndex].image : VK_NULL_HANDLE;
 }
 
-VkImageView SwitchVideoContext::frameImageView() const
+VkImageView SwitchVulkanVideoContext::frameImageView() const
 {
     return state->imageIndex ? state->images[*state->imageIndex].view.get() : VK_NULL_HANDLE;
 }
 
-VkExtent2D SwitchVideoContext::frameExtent() const
+VkExtent2D SwitchVulkanVideoContext::frameExtent() const
 {
     return state->extent;
 }
 
-VkFormat SwitchVideoContext::colorFormat() const
+VkFormat SwitchVulkanVideoContext::colorFormat() const
 {
     return state->surfaceFormat.format;
 }
 
-VkFormat SwitchVideoContext::stencilFormat() const
+VkFormat SwitchVulkanVideoContext::stencilFormat() const
 {
     return state->stencilFormat;
 }
 
-void SwitchVideoContext::beginRendering(VkAttachmentLoadOp colorLoad)
+void SwitchVulkanVideoContext::beginRendering(VkAttachmentLoadOp colorLoad)
 {
     state->beginRendering(colorLoad);
 }
 
-void SwitchVideoContext::endRendering()
+void SwitchVulkanVideoContext::endRendering()
 {
     state->endRendering();
 }
 
-bool SwitchVideoContext::isRendering() const
+bool SwitchVulkanVideoContext::isRendering() const
 {
     return state->rendering;
 }
 
-void SwitchVideoContext::deferUntilFrameRetired(std::function<void()> release)
+void SwitchVulkanVideoContext::deferUntilFrameRetired(std::function<void()> release)
 {
     state->defer(std::move(release));
 }

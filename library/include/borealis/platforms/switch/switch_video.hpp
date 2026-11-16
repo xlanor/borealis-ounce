@@ -22,10 +22,11 @@ limitations under the License.
 #include <switch.h>
 
 #include <borealis/core/video.hpp>
-#include <deko3d.hpp>
+#include <borealis/platforms/switch/dk.hpp>
 #include <nanovg/dk_renderer.hpp>
-#include <optional>
 #include <mutex>
+#include <optional>
+#include <string>
 
 typedef Event _LibNXEvent; // "Event" alone clashes with brls::Event
 
@@ -35,11 +36,13 @@ namespace brls
 static constexpr const unsigned FRAMEBUFFERS_COUNT = 3;
 
 // deko3d video context
-class SwitchVideoContext : public VideoContext
+class SwitchDeko3dVideoContext : public VideoContext
 {
   public:
-    SwitchVideoContext();
-    ~SwitchVideoContext() override;
+    static std::optional<std::string> unavailableReason();
+
+    SwitchDeko3dVideoContext();
+    ~SwitchDeko3dVideoContext() override;
 
     void clear(NVGcolor color) override;
     void resetState() override;
@@ -73,6 +76,8 @@ class SwitchVideoContext : public VideoContext
     CMemPool* getImagesPool() { return imagesPool ? &*imagesPool : nullptr; }
 
   private:
+    static void recordDeviceError(void* userData, const char* context, DkResult result, const char* message);
+
     _LibNXEvent defaultDisplayResolutionChangeEvent;
     bool displayResolutionChangeEventReady = true;
 
@@ -107,5 +112,9 @@ class SwitchVideoContext : public VideoContext
     NVGcontext* nvgContext;
     std::mutex frameMutex;
 };
+
+#ifndef BOREALIS_USE_VULKAN
+using SwitchVideoContext = SwitchDeko3dVideoContext;
+#endif
 
 } // namespace brls

@@ -20,6 +20,9 @@ limitations under the License.
 
 #include <borealis/core/application.hpp>
 #include <borealis/platforms/switch/switch_video.hpp>
+#include <array>
+#include <filesystem>
+#include <system_error>
 
 // nanovg implementation
 #include <nanovg_dk.h>
@@ -39,7 +42,29 @@ namespace brls
 
 static constexpr const unsigned STATIC_CMD_SIZE = 0x1000;
 
-SwitchVideoContext::SwitchVideoContext()
+std::optional<std::string> SwitchDeko3dVideoContext::unavailableReason()
+{
+    constexpr std::array shaders { "romfs:/shaders/fill_vsh.dksh", "romfs:/shaders/fill_fsh.dksh", "romfs:/shaders/fill_aa_fsh.dksh" };
+    for (const char* shader : shaders)
+    {
+        std::error_code error;
+        if (!std::filesystem::exists(shader, error))
+            return fmt::format("missing nanovg shader {}", shader);
+    }
+
+    std::string deviceError;
+    dk::UniqueDevice probe = dk::DeviceMaker {}.setUserData(&deviceError).setCbDebug(&SwitchDeko3dVideoContext::recordDeviceError).create();
+    if (!probe)
+        return deviceError.empty() ? std::string("device creation failed") : deviceError;
+    return std::nullopt;
+}
+
+void SwitchDeko3dVideoContext::recordDeviceError(void* userData, const char* context, DkResult result, const char* message)
+{
+    *static_cast<std::string*>(userData) = fmt::format("{}: {} ({})", context ? context : "device", message ? message : "error", static_cast<int>(result));
+}
+
+SwitchDeko3dVideoContext::SwitchDeko3dVideoContext()
 {
     // Get display resolution change event
     Result rc = appletGetDefaultDisplayResolutionChangeEvent(&this->defaultDisplayResolutionChangeEvent);
@@ -81,7 +106,7 @@ SwitchVideoContext::SwitchVideoContext()
     setSwapInterval(VideoContext::swapInterval);
 }
 
-void SwitchVideoContext::createFramebufferResources()
+void SwitchDeko3dVideoContext::createFramebufferResources()
 {
     // Create layout for the depth buffer
     dk::ImageLayout depthBufferLayout;
@@ -130,7 +155,7 @@ void SwitchVideoContext::createFramebufferResources()
     this->recordStaticCommands();
 }
 
-void SwitchVideoContext::recordStaticCommands()
+void SwitchDeko3dVideoContext::recordStaticCommands()
 {
     // This method should always be called AFTER initializing the theme variant
     // since the static clear command uses the theme background color
@@ -160,7 +185,7 @@ void SwitchVideoContext::recordStaticCommands()
     this->renderCmdlist = cmdbuf.finishList();
 }
 
-void SwitchVideoContext::updateWindowSize()
+void SwitchDeko3dVideoContext::updateWindowSize()
 {
     // First try to get actual resolution with GetDefaultDisplayResolution
     int32_t width, height;
@@ -196,17 +221,17 @@ void SwitchVideoContext::updateWindowSize()
         this->renderer->UpdateViewBounds(this->framebufferWidth, this->framebufferHeight);
 }
 
-void SwitchVideoContext::clear(NVGcolor color)
+void SwitchDeko3dVideoContext::clear(NVGcolor color)
 {
     // Unimplemented here (clear is made using a static command ran every frame)
 }
 
-void SwitchVideoContext::resetState()
+void SwitchDeko3dVideoContext::resetState()
 {
     // Unimplemented
 }
 
-void SwitchVideoContext::resetFramebuffer()
+void SwitchDeko3dVideoContext::resetFramebuffer()
 {
     brls::Logger::error("resetFramebuffer");
     this->destroyFramebufferResources();
@@ -214,7 +239,7 @@ void SwitchVideoContext::resetFramebuffer()
     this->createFramebufferResources();
 }
 
-void SwitchVideoContext::beginFrame()
+void SwitchDeko3dVideoContext::beginFrame()
 {
     this->frameMutex.lock();
 
@@ -231,20 +256,20 @@ void SwitchVideoContext::beginFrame()
     queue.submitCommands(this->renderCmdlist);
 }
 
-void SwitchVideoContext::endFrame()
+void SwitchDeko3dVideoContext::endFrame()
 {
     // Now that we are done rendering, present it to the screen
     queue.presentImage(this->swapchain, this->imageSlot);
     this->frameMutex.unlock();
 }
 
-void SwitchVideoContext::setSwapInterval(int interval)
+void SwitchDeko3dVideoContext::setSwapInterval(int interval)
 {
     VideoContext::swapInterval = interval;
     swapchain.setSwapInterval(interval);
 }
 
-void SwitchVideoContext::destroyFramebufferResources()
+void SwitchDeko3dVideoContext::destroyFramebufferResources()
 {
     // Return early if we have nothing to destroy
     if (!this->swapchain)
@@ -267,19 +292,19 @@ void SwitchVideoContext::destroyFramebufferResources()
     depthBufferHandle.destroy();
 }
 
-void SwitchVideoContext::appletCallback(AppletHookType hookType)
+void SwitchDeko3dVideoContext::appletCallback(AppletHookType hookType)
 {
     // Only reset framebuffer if the display resolution change event isn't ready
     if (hookType == AppletHookType_OnOperationMode && !this->displayResolutionChangeEventReady)
         resetFramebuffer();
 }
 
-NVGcontext* SwitchVideoContext::getNVGContext()
+NVGcontext* SwitchDeko3dVideoContext::getNVGContext()
 {
     return this->nvgContext;
 }
 
-SwitchVideoContext::~SwitchVideoContext()
+SwitchDeko3dVideoContext::~SwitchDeko3dVideoContext()
 {
     // Destroy the framebuffer resources. This should be done first.
     this->destroyFramebufferResources();
@@ -291,45 +316,45 @@ SwitchVideoContext::~SwitchVideoContext()
     this->renderer.reset();
 }
 
-double SwitchVideoContext::getScaleFactor()
+double SwitchDeko3dVideoContext::getScaleFactor()
 {
     return 1.0;
 }
 
-dk::Device SwitchVideoContext::getDeko3dDevice() { return device; }
+dk::Device SwitchDeko3dVideoContext::getDeko3dDevice() { return device; }
 
-dk::Queue SwitchVideoContext::getQueue() { return queue; }
+dk::Queue SwitchDeko3dVideoContext::getQueue() { return queue; }
 
-dk::Image* SwitchVideoContext::getFramebuffer()
+dk::Image* SwitchDeko3dVideoContext::getFramebuffer()
 {
     return &framebuffers[imageSlot];
 }
 
-int SwitchVideoContext::allocateImageIndex() { return renderer->AllocateImageIndex(); }
+int SwitchDeko3dVideoContext::allocateImageIndex() { return renderer->AllocateImageIndex(); }
 
-bool SwitchVideoContext::freeImageIndex(int index) { return renderer->FreeImageIndex(index); }
+bool SwitchDeko3dVideoContext::freeImageIndex(int index) { return renderer->FreeImageIndex(index); }
 
-bool SwitchVideoContext::updateImageDescriptor(dk::CmdBuf cmdbuf, int index, dk::ImageDescriptor const& descriptor)
+bool SwitchDeko3dVideoContext::updateImageDescriptor(dk::CmdBuf cmdbuf, int index, dk::ImageDescriptor const& descriptor)
 {
     return renderer->UpdateImageDescriptor(cmdbuf, index, descriptor);
 }
 
-void SwitchVideoContext::invalidateImageDescriptors(dk::CmdBuf cmdbuf)
+void SwitchDeko3dVideoContext::invalidateImageDescriptors(dk::CmdBuf cmdbuf)
 {
     renderer->InvalidateImageDescriptors(cmdbuf);
 }
 
-void SwitchVideoContext::queueWaitFence(DkFence* fence)
+void SwitchDeko3dVideoContext::queueWaitFence(DkFence* fence)
 {
     dkQueueWaitFence(this->queue, fence);
 }
 
-void SwitchVideoContext::queueSignalFence(DkFence* fence, bool flash)
+void SwitchDeko3dVideoContext::queueSignalFence(DkFence* fence, bool flash)
 {
     dkQueueSignalFence(this->queue, fence, flash);
 }
 
-void SwitchVideoContext::queueFlush()
+void SwitchDeko3dVideoContext::queueFlush()
 {
     dkQueueFlush(this->queue);
 }

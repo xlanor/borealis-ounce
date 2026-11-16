@@ -78,11 +78,9 @@ static void on_applet_hook(AppletHookType hook, void* arg)
         case AppletHookType_OnResume:
             brls::Logger::info("AppletHookType_OnResume - app resuming from sleep");
             break;
-#if defined(BOREALIS_USE_DEKO3D) || defined(BOREALIS_USE_VULKAN)
         case AppletHookType_OnOperationMode:
-            ((SwitchVideoContext*)platform->getVideoContext())->appletCallback(hook);
+            platform->appletCallback(hook);
             break;
-#endif
         default:
             break;
     }
@@ -139,7 +137,7 @@ SwitchPlatform::SwitchPlatform()
 void SwitchPlatform::createWindow(std::string windowTitle, uint32_t windowWidth, uint32_t windowHeight, float windowXPos, float windowYPos)
 {
 #if defined(BOREALIS_USE_DEKO3D) || defined(BOREALIS_USE_VULKAN)
-    this->videoContext = new SwitchVideoContext();
+    this->startVideoContext();
 #elif defined(__SDL2__)
     this->videoContext = new SDLVideoContext(windowTitle, windowWidth, windowHeight, 0, 0);
 #else
@@ -148,6 +146,63 @@ void SwitchPlatform::createWindow(std::string windowTitle, uint32_t windowWidth,
 
     // Reinitialise controllers with settings from borealis, not by GLFW or SDL
     this->inputManager = new SwitchInputManager();
+}
+
+#if defined(BOREALIS_USE_DEKO3D) || defined(BOREALIS_USE_VULKAN)
+void SwitchPlatform::startVideoContext()
+{
+#if defined(BOREALIS_USE_DEKO3D) && defined(BOREALIS_USE_VULKAN)
+    if (this->preferredRenderer == SwitchRenderer::Deko3d)
+    {
+        if (std::optional<std::string> reason = SwitchDeko3dVideoContext::unavailableReason())
+        {
+            Logger::warning("switch: drako3d video context unavailable ({}), starting vulkan instead", *reason);
+        }
+        else
+        {
+            Logger::info("switch: starting drako3d video context");
+            this->deko3dContext = std::make_unique<SwitchDeko3dVideoContext>();
+            return;
+        }
+    }
+    Logger::info("switch: starting vulkan video context");
+    this->vulkanContext = std::make_unique<SwitchVulkanVideoContext>();
+#elif defined(BOREALIS_USE_DEKO3D)
+    this->deko3dContext = std::make_unique<SwitchDeko3dVideoContext>();
+#else
+    this->vulkanContext = std::make_unique<SwitchVulkanVideoContext>();
+#endif
+}
+#endif
+
+void SwitchPlatform::setRenderer(SwitchRenderer renderer)
+{
+    this->preferredRenderer = renderer;
+}
+
+std::optional<SwitchRenderer> SwitchPlatform::getRenderer() const
+{
+#ifdef BOREALIS_USE_DEKO3D
+    if (this->deko3dContext)
+        return SwitchRenderer::Deko3d;
+#endif
+#ifdef BOREALIS_USE_VULKAN
+    if (this->vulkanContext)
+        return SwitchRenderer::Vulkan;
+#endif
+    return std::nullopt;
+}
+
+void SwitchPlatform::appletCallback(AppletHookType hookType)
+{
+#ifdef BOREALIS_USE_DEKO3D
+    if (this->deko3dContext)
+        this->deko3dContext->appletCallback(hookType);
+#endif
+#ifdef BOREALIS_USE_VULKAN
+    if (this->vulkanContext)
+        this->vulkanContext->appletCallback(hookType);
+#endif
 }
 
 bool SwitchPlatform::canShowBatteryLevel()
@@ -327,7 +382,19 @@ bool SwitchPlatform::mainLoopIteration()
 
 VideoContext* SwitchPlatform::getVideoContext()
 {
+#if defined(BOREALIS_USE_DEKO3D) || defined(BOREALIS_USE_VULKAN)
+#ifdef BOREALIS_USE_DEKO3D
+    if (this->deko3dContext)
+        return this->deko3dContext.get();
+#endif
+#ifdef BOREALIS_USE_VULKAN
+    if (this->vulkanContext)
+        return this->vulkanContext.get();
+#endif
+    return nullptr;
+#else
     return this->videoContext;
+#endif
 }
 
 std::string SwitchPlatform::getLocale()
@@ -364,7 +431,8 @@ void SwitchPlatform::setThemeVariant(ThemeVariant theme)
 {
     this->themeVariant = theme;
 #ifdef BOREALIS_USE_DEKO3D
-    this->videoContext->recordStaticCommands();
+    if (this->deko3dContext)
+        this->deko3dContext->recordStaticCommands();
 #endif
 }
 
@@ -374,7 +442,15 @@ SwitchPlatform::~SwitchPlatform()
 
     delete this->audioPlayer;
     delete this->inputManager;
+#ifdef BOREALIS_USE_DEKO3D
+    this->deko3dContext.reset();
+#endif
+#ifdef BOREALIS_USE_VULKAN
+    this->vulkanContext.reset();
+#endif
+#if !defined(BOREALIS_USE_DEKO3D) && !defined(BOREALIS_USE_VULKAN)
     delete this->videoContext;
+#endif
     delete this->imeManager;
 }
 

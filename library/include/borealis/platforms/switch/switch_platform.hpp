@@ -16,14 +16,18 @@
 
 #pragma once
 
+#ifdef BOREALIS_USE_DEKO3D
+#include <borealis/platforms/switch/switch_video.hpp>
+#endif
 #ifdef BOREALIS_USE_VULKAN
 #include <borealis/platforms/switch/switch_video_vk.hpp>
-#elif defined(BOREALIS_USE_DEKO3D)
-#include <borealis/platforms/switch/switch_video.hpp>
-#elif defined(__SDL2__)
+#endif
+#if !defined(BOREALIS_USE_DEKO3D) && !defined(BOREALIS_USE_VULKAN)
+#ifdef __SDL2__
 #include <borealis/platforms/sdl/sdl_video.hpp>
 #else
 #include <borealis/platforms/glfw/glfw_video.hpp>
+#endif
 #endif
 #include <borealis/core/platform.hpp>
 #include <borealis/core/theme.hpp>
@@ -31,9 +35,17 @@
 #include <borealis/platforms/switch/switch_font.hpp>
 #include <borealis/platforms/switch/switch_ime.hpp>
 #include <borealis/platforms/switch/switch_input.hpp>
+#include <memory>
+#include <optional>
 
 namespace brls
 {
+
+enum class SwitchRenderer
+{
+    Deko3d,
+    Vulkan,
+};
 
 class SwitchPlatform : public Platform
 {
@@ -75,7 +87,15 @@ class SwitchPlatform : public Platform
 
     void appletCallback(AppletHookType hookType);
 
+    void setRenderer(SwitchRenderer renderer);
+    std::optional<SwitchRenderer> getRenderer() const;
+
   private:
+#if defined(BOREALIS_USE_DEKO3D) && !defined(BOREALIS_USE_VULKAN)
+    SwitchRenderer preferredRenderer = SwitchRenderer::Deko3d;
+#else
+    SwitchRenderer preferredRenderer = SwitchRenderer::Vulkan;
+#endif
     ThemeVariant themeVariant;
     std::string locale;
 
@@ -84,7 +104,14 @@ class SwitchPlatform : public Platform
     SwitchImeManager* imeManager;
 
 #if defined(BOREALIS_USE_DEKO3D) || defined(BOREALIS_USE_VULKAN)
-    SwitchVideoContext* videoContext;
+    void startVideoContext();
+
+#ifdef BOREALIS_USE_DEKO3D
+    std::unique_ptr<SwitchDeko3dVideoContext> deko3dContext;
+#endif
+#ifdef BOREALIS_USE_VULKAN
+    std::unique_ptr<SwitchVulkanVideoContext> vulkanContext;
+#endif
 #elif defined(__SDL2__)
     SDLVideoContext* videoContext;
 #else

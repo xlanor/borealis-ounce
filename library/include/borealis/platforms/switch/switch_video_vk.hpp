@@ -14,15 +14,15 @@
 namespace brls
 {
 
-class SwitchVideoContext : public VideoContext
+class SwitchVulkanVideoContext : public VideoContext
 {
   public:
     static constexpr uint32_t FramesInFlight = 2;
 
-    SwitchVideoContext();
-    ~SwitchVideoContext() override;
-    SwitchVideoContext(const SwitchVideoContext&)            = delete;
-    SwitchVideoContext& operator=(const SwitchVideoContext&) = delete;
+    SwitchVulkanVideoContext();
+    ~SwitchVulkanVideoContext() override;
+    SwitchVulkanVideoContext(const SwitchVulkanVideoContext&)            = delete;
+    SwitchVulkanVideoContext& operator=(const SwitchVulkanVideoContext&) = delete;
 
     void clear(NVGcolor color) override;
     void resetState() override;
@@ -63,5 +63,9 @@ class SwitchVideoContext : public VideoContext
     struct State;
     std::unique_ptr<State> state;
 };
+
+#ifndef BOREALIS_USE_DEKO3D
+using SwitchVideoContext = SwitchVulkanVideoContext;
+#endif
 
 } // namespace brls

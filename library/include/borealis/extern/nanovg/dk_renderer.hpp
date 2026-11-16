@@ -1,6 +1,6 @@
 #pragma once
 
-#include <deko3d.hpp>
+#include <borealis/platforms/switch/dk.hpp>
 #include <map>
 #include <memory>
 #include <vector>

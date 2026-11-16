@@ -9,4 +9,4 @@
 
 #include <switch.h>
 
-#include <deko3d.hpp>
+#include <borealis/platforms/switch/dk.hpp>
