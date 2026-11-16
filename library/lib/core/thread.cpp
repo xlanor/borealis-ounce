@@ -29,6 +29,7 @@
 
 #if defined(__SWITCH__)
 #include <switch.h>
+#include <bit>
 #endif
 
 #ifdef PS4
@@ -42,18 +43,13 @@ namespace brls
 namespace {
 
 int countAllowedCores(u64 affinityMask) {
-    int count = 0;
-    for (s32 core = 0; core < 4; core++) {
-        if (affinityMask & (1ULL << core)) {
-            count++;
-        }
-    }
-    return count;
+    return std::popcount(affinityMask & u64{BOREALIS_SWITCH_CORE_MASK});
 }
 
 s32 selectAllowedCore(u64 affinityMask, int ordinal) {
+    affinityMask &= u64{BOREALIS_SWITCH_CORE_MASK};
     s32 lastAllowedCore = -1;
-    for (s32 core = 0; core < 4; core++) {
+    for (s32 core = 0; core < 64; core++) {
         if ((affinityMask & (1ULL << core)) == 0) {
             continue;
         }

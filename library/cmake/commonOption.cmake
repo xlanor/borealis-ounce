@@ -40,6 +40,7 @@ cmake_dependent_option(USE_DEKO3D "Using deko3d instead of OpenGL." OFF "PLATFOR
 cmake_dependent_option(PLATFORM_SWITCH2 "Build for Switch 2 with libounce." OFF "PLATFORM_SWITCH" OFF)
 cmake_dependent_option(USE_VULKAN "Using Vulkan instead of OpenGL." OFF "PLATFORM_SWITCH" OFF)
 cmake_dependent_option(USE_DRAKO3D "Using drako3d with a Vulkan fallback, chosen at startup." OFF "PLATFORM_SWITCH2" OFF)
+set(BOREALIS_SWITCH_CORE_MASK "0xF" CACHE STRING "Cores borealis may place its Switch threads on.")
 
 option(USE_BOOST_FILESYSTEM "Whether to use the boost::filesystem instead of std::filesystem" OFF)
 
