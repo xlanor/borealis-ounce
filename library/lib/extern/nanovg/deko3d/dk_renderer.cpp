@@ -7,9 +7,7 @@
 #include <math.h>
 #include <switch.h>
 
-#define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES /* Enforces GLSL std140/std430 alignment rules for glm types. */
-#define GLM_FORCE_INTRINSICS               /* Enables usage of SIMD CPU instructions (requiring the above as well). */
-#include <glm/vec2.hpp>
+#include <array>
 
 namespace nvg {
 
@@ -23,7 +21,7 @@ namespace nvg {
         };
 
         struct View {
-            glm::vec2 size;
+            alignas(8) std::array<float, 2> size;
         };
 
         void UpdateImage(dk::Image &image, CMemPool &scratchPool, dk::Device device, dk::Queue transferQueue, int type, int x, int y, int w, int h, const u8 *data) {
@@ -574,7 +572,7 @@ namespace nvg {
             m_dyn_cmd_buf.bindVtxBuffer(0, m_vertex_buffer->getGpuAddr(), m_vertex_buffer->getSize());
 
             /* Push the view size to the uniform buffer and bind it. */
-            const auto view = View{glm::vec2{m_view_width, m_view_height}};
+            const auto view = View{{static_cast<float>(m_view_width), static_cast<float>(m_view_height)}};
             m_dyn_cmd_buf.pushConstants(m_view_uniform_buffer.getGpuAddr(), m_view_uniform_buffer.getSize(), 0, sizeof(view), &view);
             m_dyn_cmd_buf.bindUniformBuffer(DkStage_Vertex, 0, m_view_uniform_buffer.getGpuAddr(), m_view_uniform_buffer.getSize());
 
